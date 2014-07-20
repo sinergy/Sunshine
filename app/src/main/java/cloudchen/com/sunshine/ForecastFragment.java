@@ -1,8 +1,12 @@
 package cloudchen.com.sunshine;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,8 +15,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.ShareActionProvider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,6 +31,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -47,27 +54,24 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.forecast_fragment, container, false);
 
-        String[] forecastArray =  {
-                "Today - Sunny - 88/63",
-                "Tomorrow - Foggy - 88/63",
-                "Wednesday - Cloudy - 88/63",
-                "Thursday - Asteroids - 88/63",
-                "Friday - Heavy Rain - 88/63",
-                "Saturday - OMG - 60/51",
-                "Sunday - Sunny - 80/68"
-        };
-
-        List<String> weekForecast = Arrays.asList(forecastArray);
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
-                weekForecast
+                new ArrayList<String>()
         );
 
         listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(adapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                String forecast = (String) listView.getAdapter().getItem(position);
+                Intent intent = new Intent(getActivity(), DetailActivity.class)
+                        .putExtra(Intent.EXTRA_TEXT, forecast);
+                startActivity(intent);
+            }
+        });
 
         return rootView;
     }
@@ -81,11 +85,27 @@ public class ForecastFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.action_refresh:
-                FetchWeatherTask fetchWeatherTask = new FetchWeatherTask(listView);
-                fetchWeatherTask.execute("94043");
+                updateWeather();
+                return true;
+            case R.id.action_settings:
+                Intent intent = new Intent(getActivity(), SettingsActivity.class);
+                startActivity(intent);
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    private void updateWeather() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = sharedPreferences.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        FetchWeatherTask fetchWeatherTask = new FetchWeatherTask(listView);
+        fetchWeatherTask.execute(location);
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
@@ -99,7 +119,8 @@ public class ForecastFragment extends Fragment {
 
         @Override
         protected String[] doInBackground(String... strings) {
-            String postCode = strings[0];
+            String location = strings[0];
+            Log.d(TAG, "Location: " + location);
 
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
@@ -120,7 +141,7 @@ public class ForecastFragment extends Fragment {
                 final String DAYS_PARAM = "cnt";
 
                 Uri uri = Uri.parse(BASE_URL).buildUpon()
-                    .appendQueryParameter(QUERY_PARAM, postCode)
+                    .appendQueryParameter(QUERY_PARAM, location)
                     .appendQueryParameter(FORMAT_PARAM, "json")
                     .appendQueryParameter(UNITS_PARAM, "metric")
                     .appendQueryParameter(DAYS_PARAM, "7").build();
@@ -212,9 +233,21 @@ public class ForecastFragment extends Fragment {
          * Prepare the weather high/lows for presentation.
          */
         private String formatHighLows(double high, double low) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String unitValue = preferences.getString(getString(R.string.pref_temperature_unit_key), getString(R.string.pref_temperature_unit_default));
+
             // For presentation, assume the user doesn't care about tenths of a degree.
-            long roundedHigh = Math.round(high);
-            long roundedLow = Math.round(low);
+            long roundedHigh;
+            long roundedLow;
+
+            if (unitValue.equals(getString(R.string.pref_temperature_unit_default))) {
+                roundedHigh = Math.round(high);
+                roundedLow = Math.round(low);
+            }
+            else {
+                roundedHigh = Math.round(high * 9d / 5d + 32d);
+                roundedLow = Math.round(low * 9d / 5d + 32d);
+            }
 
             return roundedHigh + "/" + roundedLow;
         }
@@ -273,5 +306,6 @@ public class ForecastFragment extends Fragment {
 
             return resultStrs;
         }
+
     }
 }
