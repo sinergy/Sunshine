@@ -78,7 +78,7 @@ public class TestDb extends AndroidTestCase {
         dbHelper.close();
     }
 
-    private static ContentValues createNorthPoleLocationValues() {
+    public static ContentValues createNorthPoleLocationValues() {
         ContentValues values = new ContentValues();
         values.put(LocationEntry.COLUMN_LOCATION_SETTING, "99705");
         values.put(LocationEntry.COLUMN_CITY_NAME, "North Pole");
@@ -102,7 +102,7 @@ public class TestDb extends AndroidTestCase {
         return weatherValues;
     }
 
-    private static void validateCursor(Cursor valueCursor, ContentValues expectedValues) {
+    public static void validateCursor(Cursor valueCursor, ContentValues expectedValues) {
 
         assertTrue(valueCursor.moveToFirst());
 

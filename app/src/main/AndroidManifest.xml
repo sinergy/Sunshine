@@ -35,7 +35,14 @@
         </activity>
         <provider
             android:authorities="cloudchen.com.sunshine"
-            android:name=".data.WeatherProvider" />
+            android:name=".data.WeatherProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="cloudchen.com.sunshine.provider"/>
     </application>
+    
+    <permission
+        android:name="cloudchen.com.sunshine.provider"
+        android:protectionLevel="dangerous" />
 
 </manifest>
