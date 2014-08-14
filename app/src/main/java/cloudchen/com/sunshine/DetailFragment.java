@@ -19,6 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import cloudchen.com.sunshine.data.WeatherContract;
@@ -165,6 +166,11 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.v(TAG, "In onLoadFinished");
         if (!data.moveToFirst()) { return; }
+
+        int weatherId = data.getInt(data.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID));
+        ((ImageView) getView().findViewById(R.id.detail_weather_icon)).setImageResource(
+                Utility.getArtResourceForWeatherCondition(weatherId)
+        );
 
         String dateString = data.getString(data.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_DATETEXT));
         String dateName = Utility.getFormattedMonthDay(getActivity(),dateString);

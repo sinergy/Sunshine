@@ -9,6 +9,8 @@ import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import cloudchen.com.sunshine.data.WeatherContract;
+
 public class ForecastAdapter extends CursorAdapter {
 
     private final int VIEW_TYPE_TODAY = 0;
@@ -50,8 +52,16 @@ public class ForecastAdapter extends CursorAdapter {
             holder.low = (TextView) view.findViewById(R.id.list_item_low_textview);
         }
         // Read weather icon ID from cursor
-        int weatherId = cursor.getInt(ForecastFragment.COL_WEATHER_ID);
-        holder.icon.setImageResource(R.drawable.ic_launcher);
+        int weatherId = cursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
+        int viewType = getItemViewType(cursor.getPosition());
+        switch (viewType) {
+            case VIEW_TYPE_TODAY:
+                holder.icon.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+                break;
+            case VIEW_TYPE_FUTURE_TODAY:
+                holder.icon.setImageResource(Utility.getIconResourceForWeatherCondition(weatherId));
+                break;
+        }
 
         // Read date from cursor
         String dateString = cursor.getString(ForecastFragment.COL_WEATHER_DATE);
