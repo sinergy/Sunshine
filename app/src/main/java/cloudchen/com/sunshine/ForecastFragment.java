@@ -16,8 +16,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
-import android.widget.TextView;
 
 import java.util.Date;
 
@@ -31,8 +29,11 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     ForecastAdapter forecastAdapter;
 
     private static final int FORECAST_LOADER = 0;
+    private static final String POSITION_KEY = "position";
+
     private String mLocation;
     private int loaderId;
+    private int mLastSelectedPosition;
 
     // For the forecast view we're showing only a small subset of the stored data.
     // Specify the columns we need.
@@ -80,8 +81,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.forecast_fragment, container, false);
-
+        View rootView = inflater.inflate(R.layout.fragment_forecast, container, false);
+        if (savedInstanceState != null) {
+            mLastSelectedPosition = savedInstanceState.getInt(POSITION_KEY);
+        }
         forecastAdapter = new ForecastAdapter(getActivity(), null, 0);
 
         listView = (ListView) rootView.findViewById(R.id.listview_forecast);
@@ -93,23 +96,19 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 Cursor cursor = adapter.getCursor();
 
                 if (cursor != null && cursor.moveToPosition(position)) {
-                    String dateString = Utility.formatDate(cursor.getString(COL_WEATHER_DATE));
-                    String weatherDescription = cursor.getString(COL_WEATHER_DESC);
-
-                    boolean isMetric = Utility.isMetric(getActivity());
-                    String high = Utility.formatTemperature(
-                            getActivity(), cursor.getDouble(COL_WEATHER_MAX_TEMP), isMetric);
-                    String low = Utility.formatTemperature(
-                            getActivity(), cursor.getDouble(COL_WEATHER_MIN_TEMP), isMetric);
-
-                    Intent intent = new Intent(getActivity(), DetailActivity.class)
-                            .putExtra(DetailFragment.DATE_KEY, cursor.getString(COL_WEATHER_DATE));
-                    startActivity(intent);
+                    ((Callback) getActivity()).onItemSelected(cursor.getString(COL_WEATHER_DATE));
+                    mLastSelectedPosition = position;
                 }
             }
         });
 
         return rootView;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putInt(POSITION_KEY, mLastSelectedPosition);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -178,10 +177,25 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         forecastAdapter.swapCursor(data);
+        if (mLastSelectedPosition != ListView.INVALID_POSITION) {
+            listView.smoothScrollToPosition(mLastSelectedPosition);
+        }
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         forecastAdapter.swapCursor(null);
+    }
+
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * Callback for when an item has been selected.
+         */
+        public void onItemSelected(String date);
     }
 }
