@@ -9,7 +9,7 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_view_location"
-        android:title="@string/action_view"
+        android:title="@string/action_map"
         app:showAsAction="never" />
     <item
         android:id="@+id/menu_item_share"

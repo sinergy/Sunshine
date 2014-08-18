@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 
+import cloudchen.com.sunshine.sync.SunshineSyncAdapter;
+
 
 public class MainActivity extends ActionBarActivity implements ForecastFragment.Callback {
 
@@ -29,7 +31,9 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
 
         ForecastFragment forecastFragment =
             ((ForecastFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_forecast));
-        forecastFragment.forecastAdapter.setUseTodayLayout(!mTwoPane);
+        forecastFragment.setUseTodayLayout(!mTwoPane);
+
+        SunshineSyncAdapter.initializeSyncAdapter(this);
     }
 
     @Override

@@ -8,6 +8,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,8 +23,10 @@ import java.util.Date;
 import cloudchen.com.sunshine.data.WeatherContract;
 import cloudchen.com.sunshine.data.WeatherContract.LocationEntry;
 import cloudchen.com.sunshine.data.WeatherContract.WeatherEntry;
+import cloudchen.com.sunshine.sync.SunshineSyncAdapter;
 
 public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
+    private static final String TAG = ForecastFragment.class.getSimpleName();
 
     ListView listView;
     ForecastAdapter forecastAdapter;
@@ -34,6 +37,8 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private String mLocation;
     private int loaderId;
     private int mLastSelectedPosition;
+
+    private boolean useTodayLayout;
 
     // For the forecast view we're showing only a small subset of the stored data.
     // Specify the columns we need.
@@ -49,8 +54,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             WeatherEntry.COLUMN_SHORT_DESC,
             WeatherEntry.COLUMN_MAX_TEMP,
             WeatherEntry.COLUMN_MIN_TEMP,
+            WeatherEntry.COLUMN_WEATHER_ID,
             LocationEntry.COLUMN_LOCATION_SETTING,
-            WeatherEntry.COLUMN_WEATHER_ID
+            LocationEntry.COLUMN_COORD_LAT,
+            LocationEntry.COLUMN_COORD_LONG
     };
 
     // These indices are tied to FORECAST_COLUMNS.  If FORECAST_COLUMNS changes, these
@@ -60,8 +67,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     public static final int COL_WEATHER_DESC = 2;
     public static final int COL_WEATHER_MAX_TEMP = 3;
     public static final int COL_WEATHER_MIN_TEMP = 4;
-    public static final int COL_LOCATION_SETTING = 5;
-    public static final int COL_WEATHER_CONDITION_ID = 6;
+    public static final int COL_WEATHER_CONDITION_ID = 5;
+    public static final int COL_LOCATION_SETTING = 6;
+    public static final int COL_COORD_LAT = 7;
+    public static final int COL_COORD_LONG = 8;
 
     public ForecastFragment() {
     }
@@ -86,6 +95,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             mLastSelectedPosition = savedInstanceState.getInt(POSITION_KEY);
         }
         forecastAdapter = new ForecastAdapter(getActivity(), null, 0);
+        setUseTodayLayout(useTodayLayout);
 
         listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(forecastAdapter);
@@ -119,16 +129,43 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
-            case R.id.action_refresh:
-                updateWeather();
-                return true;
+//            case R.id.action_refresh:
+//                updateWeather();
+//                return true;
             case R.id.action_settings:
                 Intent intent = new Intent(getActivity(), SettingsActivity.class);
                 startActivity(intent);
                 return true;
+            case R.id.action_view_location:
+                openPreferredLocationInMap();
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
+
+    private void openPreferredLocationInMap() {
+        if ( null != forecastAdapter) {
+            Cursor cursor = forecastAdapter.getCursor();
+            if ( null != cursor ) {
+                cursor.moveToPosition(0);
+                String posLat = cursor.getString(COL_COORD_LAT);
+                String posLong = cursor.getString(COL_COORD_LONG);
+                Log.d(TAG, "Location latitude: " + posLat);
+                Log.d(TAG, "Location longitude: " + posLong);
+                Uri geoLocation = Uri.parse("geo:" + posLat + "," + posLong);
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(geoLocation);
+
+                if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+                    startActivity(intent);
+                } else {
+                    Log.d(TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+                }
+            }
+        }
+    }
+
 
     @Override
     public void onResume() {
@@ -138,10 +175,15 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         }
     }
 
+    public void setUseTodayLayout(boolean useTodayLayout) {
+        this.useTodayLayout = useTodayLayout;
+        if (forecastAdapter != null) {
+            forecastAdapter.setUseTodayLayout(this.useTodayLayout);
+        }
+    }
+
     private void updateWeather() {
-        String location = Utility.getPreferredLocation(getActivity());
-        FetchWeatherTask fetchWeatherTask = new FetchWeatherTask(getActivity());
-        fetchWeatherTask.execute(location);
+        SunshineSyncAdapter.syncImmediately(getActivity());
     }
 
     @Override
