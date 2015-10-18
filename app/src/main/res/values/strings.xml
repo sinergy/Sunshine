@@ -2,6 +2,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <string name="app_name" translatable="false">Sunshine</string>
+    <string name="openweather_app_id" translatable="false">a1769c5ca9df922ed2c5198d4c9681ff</string>
     <string name="title_activity_details">Details</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
