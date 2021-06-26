@@ -1,0 +1,10 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "04:30"
+    timezone: Asia/Tokyo
+  open-pull-requests-limit: 10
+  rebase-strategy: disabled
